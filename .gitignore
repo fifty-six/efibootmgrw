@@ -1,6 +1,17 @@
+.idea
+
 # Xmake cache
 .xmake/
 build/
+
+# Generated projects from xmake
+CMakeLists.txt
+cmake-build-debug
+
+vs2022
+vsxmake2022
+
+makefile
 
 # MacOS Cache
 .DS_Store
