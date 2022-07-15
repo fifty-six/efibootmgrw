@@ -7,6 +7,10 @@ if is_plat("windows") then
     -- bruh
     add_cxflags("/Zc:__cplusplus")
     add_cxflags("/Zc:preprocessor")
+
+    -- add_cxflags("/p:AppxBundlePlatforms=x64", { force = true })
+    -- add_cxflags("/p:AppxPackageDir=./AppxPackages", { force = true })
+    -- add_cxflags("/p:AppxBundle=Always", { force = true })
 else
     set_languages("cxx20")
 end
@@ -40,8 +44,12 @@ target("efibootmgrw")
     set_kind("binary")
 
     add_files("src/*.cpp")
+    add_headerfiles("src/*.h")
+
+    add_syslinks("kernel32", "advapi32", "user32")
 
     add_includedirs("lak/inc")
+    add_includedirs("lak/src")
 
     add_files("lak/src/*.cpp", {
       includedirs = "lak/inc/",

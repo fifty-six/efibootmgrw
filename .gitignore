@@ -1,4 +1,5 @@
 .idea
+.cache
 
 # Xmake cache
 .xmake/
@@ -7,6 +8,8 @@ build/
 # Generated projects from xmake
 CMakeLists.txt
 cmake-build-debug
+
+compile_commands.json
 
 vs2022
 vsxmake2022
