@@ -57,12 +57,12 @@ namespace efibootmgrw::winapi {
     constexpr dword token_query = TOKEN_QUERY;
 
     [[nodiscard]]
-    auto get_last_error() -> win_err {
+    inline auto get_last_error() -> win_err {
         return win_err{ ::GetLastError() };
     }
 
     [[nodiscard]]
-    auto open_current_process_token(dword privs) -> wresult<handle_t> {
+    inline auto open_current_process_token(dword privs) -> wresult<handle_t> {
         handle_t token{ nullptr };
 
         auto proc = ::GetCurrentProcess();
@@ -74,12 +74,12 @@ namespace efibootmgrw::winapi {
     }
 
     [[nodiscard]]
-    auto open_current_process_token() -> wresult<handle_t> {
+    inline auto open_current_process_token() -> wresult<handle_t> {
         return lak::ok_t { handle_t { ::GetCurrentProcessToken() }};
     }
 
     [[nodiscard]]
-    auto authenticate(handle_t token) -> wresult<lak::monostate> {
+    inline auto authenticate(handle_t token) -> wresult<lak::monostate> {
         for (const lak::wstring& priv: { sys_env_priv, shutdown_priv }) {
             tok_privs privs {};
 
@@ -103,26 +103,24 @@ namespace efibootmgrw::winapi {
     }
 
     [[nodiscard]]
-    auto get_firmware_env_var(lak::wstring_view name, lak::wstring_view guid, lak::span<void> buf)
+    inline auto get_firmware_env_var(lak::wstring_view name, lak::wstring_view guid, lak::span<void> buf)
     -> wresult<lak::span<void>> {
-        fmt::print("getting firmware env var!\n");
         dword ret = ::GetFirmwareEnvironmentVariableW(name.data(), guid.data(), buf.data(), buf.size_bytes());
-        fmt::print("ret: {}\n", ret);
 
         if (ret == 0) {
             return lak::err_t{ get_last_error() };
         }
 
-        return lak::ok_t{ lak::span<void>{ lak::span<byte_t>{ buf }.subspan(ret) }};
+        return lak::ok_t{ lak::span<void>{ lak::span<byte_t>{ buf }.subspan(0, ret) }};
     }
 
-    [[nodiscard]]
-    auto set_firmware_env_var(lak::wstring_view name, lak::wstring_view guid, lak::span<void> buf)
+    inline auto set_firmware_env_var(lak::wstring_view name, lak::wstring_view guid, lak::span<void> buf)
     -> wresult<lak::monostate> {
-        if (::SetFirmwareEnvironmentVariableW(name.data(), guid.data(), buf.data(), buf.size_bytes())) {
+        if (!::SetFirmwareEnvironmentVariableW(name.data(), guid.data(), buf.data(), buf.size_bytes())) {
             return lak::err_t{ get_last_error() };
         }
 
         return lak::ok_t{ };
     }
+
 }

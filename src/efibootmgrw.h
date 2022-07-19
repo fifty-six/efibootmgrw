@@ -44,8 +44,10 @@ using isize [[maybe_unused]] = intptr_t;
 #  define unreachable() assert(0 && "unreachable")
 #endif
 
-template <typename C>
-static std::string add_color(C &ctx, const std::string& msg) {
+namespace efibootmgrw {
+
+template<typename C>
+static std::string add_color(C& ctx, const std::string& msg) {
     if (ctx.args.color_diagnostics)
         return "efibootmgrw: \033[0;1;31m" + msg + ":\033[0m ";
     return "efibootmgrw: " + msg + ": ";
@@ -101,21 +103,21 @@ struct Context {
  */
 // #define Fatal(...) Fatal(__VA_ARGS__)
 
-template <typename C>
+template<typename C>
 struct Fatal {
 public:
-    explicit Fatal(C &ctx) {
+    explicit Fatal(C& ctx) {
         fmt::print(stderr, "{}", add_color(ctx, "fatal"));
     }
 
-    template <typename... Ts>
-    Fatal(C &ctx, const fmt::format_string<Ts...> fmt, Ts&&... args) {
+    template<typename... Ts>
+    Fatal(C& ctx, const fmt::format_string<Ts...> fmt, Ts&& ... args) {
         fmt::print(stderr, "{}", add_color(ctx, "fatal"));
         fmt::print(stderr, std::forward<const fmt::format_string<Ts...>>(fmt), std::forward<Ts&&>(args)...);
     }
 
-    template <typename... Ts>
-    Fatal(C &ctx, const fmt::wformat_string<Ts...> fmt, Ts&&... args) {
+    template<typename... Ts>
+    Fatal(C& ctx, const fmt::wformat_string<Ts...> fmt, Ts&& ... args) {
         fmt::print(stderr, "{}", add_color(ctx, "fatal"));
         fmt::print(stderr, std::forward<const fmt::wformat_string<Ts...>>(fmt), std::forward<Ts&&>(args)...);
     }
@@ -124,8 +126,8 @@ public:
         exit(1);
     }
 
-    template <class T>
-    Fatal &operator<<(T &&val) {
+    template<class T>
+    Fatal& operator<<(T&& val) {
         if constexpr (lak::is_same_v<lak::remove_cvref_t<T>, std::basic_string<wchar_t>>) {
             fmt::print(stderr, L"{}", std::forward<T&&>(val));
         } else {
@@ -134,3 +136,5 @@ public:
         return *this;
     }
 };
+
+}
