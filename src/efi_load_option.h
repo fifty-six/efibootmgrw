@@ -14,7 +14,7 @@ struct efi_load_option {
     // efi_device_path_protocol[] file_path_list;
     // byte_t[]                   optional_data;
 
-    // deal with flexible members
+    // "deal" with flexible members
     lak::array<byte_t, 4096> data_;
 
     [[nodiscard]] auto as_bytes() -> lak::span<byte_t>;

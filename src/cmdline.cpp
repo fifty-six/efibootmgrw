@@ -98,8 +98,7 @@ void parse_args(Context& ctx, lak::span<const char *> argv) {
         lak::result<i64, std::error_code> res = parse_int(v, base);
 
         return res.if_err([&](std::error_code ec) {
-                    auto msg = ec.message();
-                    Fatal(ctx, "failed to parse {} for flag {}: {}\n", v, flag, msg);
+                    Fatal(ctx, "failed to parse {} for flag {}: {}\n", v, flag, ec.message());
                     unreachable();
                 })
                 .if_ok([&](i64 i) {

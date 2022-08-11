@@ -34,6 +34,8 @@ using i32   [[maybe_unused]] = int32_t;
 using i64   [[maybe_unused]] = int64_t;
 using isize [[maybe_unused]] = intptr_t;
 
+#define lambda(param, __VA_ARGS__) ([&]<typename T>(T&& param) { return __VA_ARGS__; })
+
 #ifdef NDEBUG
 # ifndef LAK_COMPILER_MSVC
 #  define unreachable() __builtin_unreachable()
@@ -47,7 +49,7 @@ using isize [[maybe_unused]] = intptr_t;
 namespace efibootmgrw {
 
 template<typename C>
-static std::string add_color(C& ctx, const std::string& msg) {
+constexpr static std::string add_color(C& ctx, const std::string& msg) {
     if (ctx.args.color_diagnostics)
         return "efibootmgrw: \033[0;1;31m" + msg + ":\033[0m ";
     return "efibootmgrw: " + msg + ": ";
@@ -101,7 +103,7 @@ struct Context {
  * clang-tidy shut up about "bugprone-unused-raii" for Fatal in particular,
  * as it ignores code from macros and this macro is effectively a no-op wrapper.
  */
-// #define Fatal(...) Fatal(__VA_ARGS__)
+#define Fatal(...) Fatal(__VA_ARGS__)
 
 template<typename C>
 struct Fatal {
@@ -113,17 +115,27 @@ public:
     template<typename... Ts>
     Fatal(C& ctx, const fmt::format_string<Ts...> fmt, Ts&& ... args) {
         fmt::print(stderr, "{}", add_color(ctx, "fatal"));
-        fmt::print(stderr, std::forward<const fmt::format_string<Ts...>>(fmt), std::forward<Ts&&>(args)...);
+        fmt::print(stderr, fmt, std::forward<Ts&&>(args)...);
     }
 
     template<typename... Ts>
     Fatal(C& ctx, const fmt::wformat_string<Ts...> fmt, Ts&& ... args) {
         fmt::print(stderr, "{}", add_color(ctx, "fatal"));
-        fmt::print(stderr, std::forward<const fmt::wformat_string<Ts...>>(fmt), std::forward<Ts&&>(args)...);
+        // using print tries to convert the format arg store
+        // into wformat_args for some godforsaken reaosn
+        fmt::vprint(
+                stderr,
+                fmt,
+                fmt::make_wformat_args(std::forward<Ts&&>(args)...)
+        );
     }
 
     [[noreturn]] ~Fatal() {
         exit(1);
+    }
+
+    static Fatal<C> from_wstr(C& ctx, lak::wstring v) {
+        return Fatal(ctx, L"{}\n", v);
     }
 
     template<class T>

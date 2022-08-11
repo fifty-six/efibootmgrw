@@ -10,6 +10,7 @@
 namespace efibootmgrw::winapi {
 using dword = DWORD;
 using luid_t = LUID;
+using token_elevation_t = TOKEN_ELEVATION;
 
 struct win_err {
     dword err;
@@ -79,24 +80,28 @@ inline auto open_current_process_token() -> wresult<handle_t> {
 }
 
 [[nodiscard]]
-inline auto authenticate(handle_t token) -> wresult<lak::monostate> {
+inline auto authenticate(Context& ctx, handle_t token) -> wresult<lak::monostate> {
     for (const lak::wstring& priv : { sys_env_priv, shutdown_priv }) {
         tok_privs privs { };
-
-        fmt::print(L"looking up priv value for {}\n", priv);
 
         if (!::LookupPrivilegeValueW(nullptr, priv.data(), &privs.luid))
             return lak::err_t { get_last_error() };
 
-        fmt::print(L"adjusting token value for {}\n", priv);
-
         privs.count += 1;
         privs.attributes = SE_PRIVILEGE_ENABLED;
 
-        if (!::AdjustTokenPrivileges(token, false, reinterpret_cast<TOKEN_PRIVILEGES *>(&privs), 0, nullptr, nullptr))
+        if (!::AdjustTokenPrivileges(token, false, reinterpret_cast<TOKEN_PRIVILEGES*>(&privs), 0, nullptr, nullptr))
             return lak::err_t { get_last_error() };
+    }
 
-        fmt::print(L"adjusted for {}\n", priv);
+    token_elevation_t elevation;
+    dword cb_size = sizeof(token_elevation_t);
+    // Even if the token has the privileges, it won't be valid
+    // if we aren't in administrator mode, so check that now.
+    if (!::GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &cb_size)) {
+        return lak::err_t { get_last_error() };
+    } else if (!elevation.TokenIsElevated) {
+        Fatal(ctx) << "Not running under administrator mode!\n";
     }
 
     return lak::ok_t { };
